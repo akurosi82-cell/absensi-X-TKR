@@ -98,16 +98,6 @@ st.info(f"Posisi Rotasi: {st.session_state.rotation}°")
 password_input = st.text_input("Masukkan Password (150882):", type="password")
 foto_qr = st.camera_input("Ambil Gambar QR")
 
-# ... (Sisa kode dekripsi Anda di bawah sama seperti sebelumnya)
-
-# --- TAB 1: SCANNER (UNTUK HP GURU) ---
-with tab1:
-    st.write("Arahkan kamera ke QR Code Siswa.")
-    password_input = st.text_input("Masukkan Password (150882):", type="password")
-    
-    # Komponen kamera HP
-    foto_qr = st.camera_input("Ambil Gambar QR")
-
     if foto_qr and password_input:
         try:
             # Decode gambar
