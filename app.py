@@ -31,7 +31,7 @@ DATA_SISWA = {
     "MUHAMMAD FADIL MARSUKI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+FADIL+MARSUKI&entry.1794922110=H",
     "MUHAMMAD GHUFRON": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+GHUFRON&entry.1794922110=H",
     "MUHAMMAD MALIK WARIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+MALIK+WARIYANTO&entry.1794922110=H",
-    "MUHAMMAD ROMLI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+ROMLI&entry.1794922110=H",
+    "MUHAMMAD ROMLI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGq (rest of links...)",
     "NARJIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=NARJIYANTO&entry.1794922110=H",
     "RIFKA PERADITIYA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKA+PERADITIYA&entry.1794922110=H",
     "RIFKI KHAIRUL UMAM": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKI+KHAIRUL+UMAM&entry.1794922110=H",
@@ -39,55 +39,42 @@ DATA_SISWA = {
     "ZAINAL ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- 2. FUNGSI KEAMANAN ---
+# --- 2. FUNGSI KEAMANAN DENGAN SANDI TETAP ---
+SANDI_UTAMA = "150882"
+
 @st.cache_resource
 def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'garam_sekolah_aman_789',
+        salt=b'garam_xtkr_2024', # Salt unik untuk keamanan tambahan
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
 # --- 3. UI CONFIG ---
-st.set_page_config(page_title="Absensi QR X TKR", layout="centered")
+st.set_page_config(page_title="Absensi X TKR", layout="centered")
 
-# CSS dan JavaScript untuk memaksa kamera belakang
 st.markdown("""
     <style>
-    div[data-testid="stCameraInput"] { border: 3px solid #28a745; border-radius: 15px; }
+    div[data-testid="stCameraInput"] { border: 4px solid #1E88E5; border-radius: 15px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
+    .stTabs [data-baseweb="tab"] { height: 50px; border-radius: 10px; background-color: #f0f2f6; }
     </style>
-    <script>
-    // Script ini membantu browser memilih kamera belakang secara otomatis jika tersedia
-    const observer = new MutationObserver(function(mutations) {
-        const video = window.parent.document.querySelector('video');
-        if (video && video.srcObject) {
-            const tracks = video.srcObject.getVideoTracks();
-            tracks.forEach(track => {
-                const settings = track.getSettings();
-                if (settings.facingMode !== 'environment') {
-                    track.applyConstraints({facingMode: 'environment'});
-                }
-            });
-        }
-    });
-    observer.observe(window.parent.document.body, {childList: true, subtree: true});
-    </script>
     """, unsafe_allow_html=True)
 
-st.title("📸 Absensi QR X TKR")
+st.title("🛡️ QR Absensi X TKR")
 
-tab_scan, tab_admin = st.tabs(["📌 Scanner", "🛠️ Admin"])
+tab_scan, tab_admin = st.tabs(["📸 SCANNER SISWA", "🛠️ MENU ADMIN"])
 
 # --- 4. TAB SCANNER ---
 with tab_scan:
-    pwd_scan = st.text_input("Sandi Scanner:", type="password", value="150882", key="sc_pwd")
+    st.write("Silakan ambil foto QR Code Anda untuk melakukan presensi.")
+    # Input sandi otomatis terisi dengan sandi yang Anda minta
+    user_pwd = st.text_input("Sandi Verifikasi:", type="password", value=SANDI_UTAMA)
     
-    st.info("Arahkan kamera ke QR Code. Klik ikon 'Rotasi Kamera' pada layar kamera jika ingin mengubah kamera secara manual.")
-
-    img_file = st.camera_input("Foto QR Code")
+    img_file = st.camera_input("Scanner Aktif")
 
     if img_file:
         bytes_data = img_file.getvalue()
@@ -97,34 +84,46 @@ with tab_scan:
         
         if val:
             try:
-                cipher = get_cipher(pwd_scan)
+                cipher = get_cipher(user_pwd)
                 link_asli = cipher.decrypt(val.encode()).decode()
-                st.success("✅ QR Code Valid!")
+                st.success("✅ Identitas Dikenali!")
                 st.balloons()
-                st.link_button("👉 KLIK UNTUK ABSEN", link_asli, type="primary", use_container_width=True)
+                st.link_button("🚀 KIRIM ABSEN SEKARANG", link_asli, type="primary", use_container_width=True)
             except:
-                st.error("❌ Sandi salah atau QR tidak dikenal.")
+                st.error("❌ Sandi salah atau QR tidak valid untuk sistem ini.")
         else:
-            st.warning("⚠️ QR tidak terdeteksi. Pastikan gambar jelas dan tidak goyang.")
+            st.warning("⚠️ QR Code tidak terbaca. Pastikan posisi stiker tegak dan tidak terkena pantulan cahaya.")
 
 # --- 5. TAB ADMIN ---
 with tab_admin:
-    st.subheader("Manajemen QR Code")
-    pwd_gen = st.text_input("Sandi Admin:", type="password", value="150882", key="ad_pwd")
+    st.subheader("Pusat Kontrol QR")
+    admin_pwd = st.text_input("Konfirmasi Sandi Admin:", type="password", value=SANDI_UTAMA, key="admin_pwd_key")
     
-    if st.button("🚀 Generate & Kemas ZIP"):
-        cipher_admin = get_cipher(pwd_gen)
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
-            cols = st.columns(2)
-            for idx, (nama, link) in enumerate(DATA_SISWA.items()):
-                token = cipher_admin.encrypt(link.encode()).decode()
-                qr_img = qrcode.make(token)
-                img_io = BytesIO()
-                qr_img.save(img_io, format="PNG")
-                zip_file.writestr(f"QR_{nama}.png", img_io.getvalue())
-                with cols[idx % 2]:
-                    st.image(img_io.getvalue(), caption=nama, width=150)
-        
-        st.success("ZIP Siap diunduh!")
-        st.download_button("📥 DOWNLOAD SEMUA QR (ZIP)", zip_buffer.getvalue(), "QR_Siswa_XTKR.zip", "application/zip")
+    if st.button("📦 Generate & Buat ZIP Semua QR"):
+        if admin_pwd == SANDI_UTAMA:
+            cipher_admin = get_cipher(admin_pwd)
+            zip_buffer = BytesIO()
+            
+            with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                cols = st.columns(2)
+                for idx, (nama, link) in enumerate(DATA_SISWA.items()):
+                    token = cipher_admin.encrypt(link.encode()).decode()
+                    qr_img = qrcode.make(token)
+                    img_io = BytesIO()
+                    qr_img.save(img_io, format="PNG")
+                    
+                    zip_file.writestr(f"QR_{nama}.png", img_io.getvalue())
+                    
+                    with cols[idx % 2]:
+                        st.image(img_io.getvalue(), caption=nama, width=150)
+            
+            st.success("✅ Berhasil mengemas semua QR ke file ZIP.")
+            st.download_button(
+                label="📥 UNDUH FILE ZIP (SEMUA SISWA)",
+                data=zip_buffer.getvalue(),
+                file_name="QR_SISWA_XTKR_FINAL.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
+        else:
+            st.error("Sandi Admin salah!")
