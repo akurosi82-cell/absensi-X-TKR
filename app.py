@@ -9,24 +9,23 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
 # --- KONFIGURASI KEAMANAN ---
-# Password yang Anda minta: 150882
 def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'garam_statis_123', # Salt untuk konsistensi kunci
+        salt=b'garam_statis_123',
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-# --- DATA LINK SISWA ---
+# --- DATA LINK SISWA (LENGKAP) ---
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
     "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
     "AHMAD FAIZIN RAMADANI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+FAIZIN+RAMADANI&entry.1794922110=H",
     "AHMAD FAUZAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+FAUZAN&entry.1794922110=H",
-    "AHMAD RAMA DANI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5Y5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+RAMA+DANI&entry.1794922110=H",
+    "AHMAD RAMA DANI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+RAMA+DANI&entry.1794922110=H",
     "AKBAR ARIYAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AKBAR+ARIYAN&entry.1794922110=H",
     "AKBAR DWI SAPUTRA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AKBAR+DWI+SAPUTRA&entry.1794922110=H",
     "ALFAREZZAL RADHITYA TOROSI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ALFAREZZAL+RADHITYA+TOROSI&entry.1794922110=H",
@@ -50,93 +49,84 @@ DATA_SISWA = {
     "ZAINAl ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- ANTARMUKA WEB ---
-st.set_page_config(page_title="Scanner QR Terenkripsi", page_icon="🔒")
+# --- PENGATURAN HALAMAN ---
+st.set_page_config(page_title="Absensi QR Terenkripsi", layout="centered")
 
-import streamlit as st
+# Inisialisasi State Rotasi
+if 'rotasi' not in st.session_state:
+    st.session_state.rotasi = 0
 
-# --- BAGIAN CSS UNTUK ROTASI ---
-# Kita buat variabel state untuk menyimpan derajat rotasi
-if 'rotation' not in st.session_state:
-    st.session_state.rotation = 0
+def putar_layar():
+    st.session_state.rotasi = (st.session_state.rotasi + 90) % 360
 
-def rotate_camera():
-    st.session_state.rotation = (st.session_state.rotation + 90) % 360
-
-# Masukkan CSS dinamis berdasarkan derajat rotasi
+# --- CSS UNTUK TAMPILAN ---
 st.markdown(f"""
     <style>
-    /* Mencari elemen video dan memutarnya */
     video {{
-        transform: rotate({st.session_state.rotation}deg);
-        transition: transform 0.3s ease-in-out;
+        transform: rotate({st.session_state.rotasi}deg);
+        border: 4px solid #007bff;
         border-radius: 15px;
-        border: 3px solid #007bff;
         width: 100% !important;
-        height: auto !important;
     }}
-    .stCameraInput {{
-        overflow: hidden;
-    }}
+    .stButton>button {{ width: 100%; font-weight: bold; border-radius: 10px; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ Scanner Absensi")
+st.title("🛡️ Scanner Absensi Sekolah")
 
-# --- TOMBOL KONTROL ---
-col1, col2 = st.columns(2)
-with col1:
-    st.button("🔄 Putar Layar Kamera", on_click=rotate_camera)
-with col2:
-    if st.button("❌ Reset"):
-        st.session_state.rotation = 0
-        st.rerun()
+tab1, tab2 = st.tabs(["📲 Scanner (Guru)", "🖨️ Download QR (Admin)"])
 
-st.info(f"Posisi Rotasi: {st.session_state.rotation}°")
+# --- TAB 1: SCANNER ---
+with tab1:
+    st.info("Arahkan kamera ke QR Code. Jika miring, klik tombol 'Putar Layar'.")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.button("🔄 Putar Layar Kamera", on_click=putar_layar)
+    with col_b:
+        if st.button("❌ Reset"):
+            st.session_state.rotasi = 0
+            st.rerun()
 
-# Lanjutkan ke bagian input kamera seperti sebelumnya
-password_input = st.text_input("Masukkan Password (150882):", type="password")
-foto_qr = st.camera_input("Ambil Gambar QR")
+    pwd = st.text_input("Password Scan:", value="150882", type="password")
+    input_foto = st.camera_input("Ambil Foto QR")
 
-            # Decode gambar
-            file_bytes = np.asarray(bytearray(foto_qr.read()), dtype=np.uint8)
+    if input_foto and pwd:
+        try:
+            # Baca Gambar
+            file_bytes = np.asarray(bytearray(input_foto.read()), dtype=np.uint8)
             img = cv2.imdecode(file_bytes, 1)
             
-            detector = cv2.QRCodeDetector()
-            data, _, _ = detector.detectAndDecode(img)
+            # Deteksi QR
+            det = cv2.QRCodeDetector()
+            val, _, _ = det.detectAndDecode(img)
             
-            if data:
-                # Proses Dekripsi
-                cipher = get_cipher(password_input)
-                decrypted_url = cipher.decrypt(data.encode()).decode()
-                
-                st.success("✅ Berhasil Didekripsi!")
-                st.link_button("👉 BUKA FORM GOOGLE", decrypted_url)
+            if val:
+                cipher = get_cipher(pwd)
+                link_asli = cipher.decrypt(val.encode()).decode()
+                st.balloons()
+                st.success("✅ Terverifikasi!")
+                st.link_button("👉 KLIK UNTUK ISI ABSEN", link_asli)
             else:
-                st.error("QR Code tidak terbaca. Pastikan cahaya cukup.")
+                st.error("Gagal mendeteksi QR Code. Coba putar layar atau pastikan cahaya cukup.")
         except:
-            st.error("❌ Password Salah atau QR Code tidak valid!")
+            st.error("❌ Password Salah atau Data Rusak!")
 
-# --- TAB 2: GENERATOR (UNTUK ANDA CETAK) ---
+# --- TAB 2: GENERATOR ---
 with tab2:
-    st.header("Daftar QR Code Siswa")
-    st.write("Gunakan menu ini untuk mendownload QR Code dan mencetaknya.")
+    st.header("Cetak QR Code Siswa")
+    st.warning("Gunakan kertas putih dan cetak dengan jelas.")
     
-    if st.button("Tampilkan Semua QR Code"):
+    if st.button("Tampilkan Daftar QR"):
         cipher = get_cipher("150882")
-        cols = st.columns(2) # Dua kolom agar rapi di HP
-        
+        cols = st.columns(2)
         for i, (nama, url) in enumerate(DATA_SISWA.items()):
-            # Enkripsi URL
-            encrypted_data = cipher.encrypt(url.encode())
-            
-            # Buat QR
-            qr = qrcode.make(encrypted_data)
+            # Enkripsi & Buat QR
+            enc = cipher.encrypt(url.encode())
+            img_qr = qrcode.make(enc)
             buf = BytesIO()
-            qr.save(buf, format="PNG")
+            img_qr.save(buf, format="PNG")
             
             with cols[i % 2]:
                 st.image(buf.getvalue(), caption=nama, use_container_width=True)
-                st.download_button(label=f"Unduh {nama}", data=buf.getvalue(), file_name=f"QR_{nama}.png", mime="image/png")
-
-st.caption("Sistem QR Terenkripsi v1.0 - Password Protected")
+                st.download_button(f"Simpan QR {nama}", buf.getvalue(), f"{nama}.png", "image/png")
