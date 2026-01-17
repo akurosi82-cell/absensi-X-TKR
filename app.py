@@ -61,7 +61,7 @@ tab_scan, tab_admin = st.tabs(["📌 Scanner Siswa", "🛠️ Generator Admin"])
 # --- 4. TAB SCANNER ---
 with tab_scan:
     pwd_scan = st.text_input("Sandi Scanner:", type="password", value="150882", key="sc_pwd")
-    st.info("Klik 'Start' dan arahkan kamera ke QR Code.")
+    st.info("Klik 'Start' dan arahkan kamera ke QR Code. Pilih kamera belakang pada 'Select Device' jika perlu.")
 
     ctx = webrtc_streamer(
         key="scanner-pro",
@@ -96,31 +96,22 @@ with tab_admin:
     
     if st.button("🚀 Generate & Siapkan ZIP Semua Siswa"):
         cipher_admin = get_cipher(pwd_gen)
-        
-        # Buffer untuk file ZIP
         zip_buffer = BytesIO()
         
         with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
             cols = st.columns(2)
             for idx, (nama, link) in enumerate(DATA_SISWA.items()):
-                # Enkripsi
                 token = cipher_admin.encrypt(link.encode()).decode()
-                
-                # Buat QR
                 qr = qrcode.make(token)
                 img_buffer = BytesIO()
                 qr.save(img_buffer, format="PNG")
                 
-                # Tambahkan ke ZIP
                 zip_file.writestr(f"QR_{nama}.png", img_buffer.getvalue())
                 
-                # Tampilkan di UI
                 with cols[idx % 2]:
                     st.image(img_buffer.getvalue(), caption=nama, width=150)
         
         st.success(f"Berhasil membuat {len(DATA_SISWA)} QR Code!")
-        
-        # Tombol Download ZIP
         st.download_button(
             label="📥 DOWNLOAD SEMUA QR (ZIP)",
             data=zip_buffer.getvalue(),
@@ -130,4 +121,4 @@ with tab_admin:
         )
 
 st.divider()
-st.caption("Aplikasi Absensi Mandiri - Pastikan koneksi internet stabil.")
+st.caption("Aplikasi Absensi Mandiri - Versi Keamanan Tinggi")
