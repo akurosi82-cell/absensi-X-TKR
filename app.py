@@ -1,50 +1,4 @@
 import streamlit as st
-import streamlit as st
-
-# --- BAGIAN CSS UNTUK ROTASI ---
-# Kita buat variabel state untuk menyimpan derajat rotasi
-if 'rotation' not in st.session_state:
-    st.session_state.rotation = 0
-
-def rotate_camera():
-    st.session_state.rotation = (st.session_state.rotation + 90) % 360
-
-# Masukkan CSS dinamis berdasarkan derajat rotasi
-st.markdown(f"""
-    <style>
-    /* Mencari elemen video dan memutarnya */
-    video {{
-        transform: rotate({st.session_state.rotation}deg);
-        transition: transform 0.3s ease-in-out;
-        border-radius: 15px;
-        border: 3px solid #007bff;
-        width: 100% !important;
-        height: auto !important;
-    }}
-    .stCameraInput {{
-        overflow: hidden;
-    }}
-    </style>
-    """, unsafe_allow_html=True)
-
-st.title("🛡️ Scanner Absensi")
-
-# --- TOMBOL KONTROL ---
-col1, col2 = st.columns(2)
-with col1:
-    st.button("🔄 Putar Layar Kamera", on_click=rotate_camera)
-with col2:
-    if st.button("❌ Reset"):
-        st.session_state.rotation = 0
-        st.rerun()
-
-st.info(f"Posisi Rotasi: {st.session_state.rotation}°")
-
-# Lanjutkan ke bagian input kamera seperti sebelumnya
-password_input = st.text_input("Masukkan Password (150882):", type="password")
-foto_qr = st.camera_input("Ambil Gambar QR")
-
-# ... (Sisa kode dekripsi Anda di bawah sama seperti sebelumnya)
 import qrcode
 import cv2
 import numpy as np
@@ -99,23 +53,52 @@ DATA_SISWA = {
 # --- ANTARMUKA WEB ---
 st.set_page_config(page_title="Scanner QR Terenkripsi", page_icon="🔒")
 
-# Styling CSS untuk tampilan mobile yang lebih baik
-st.markdown("""
+import streamlit as st
+
+# --- BAGIAN CSS UNTUK ROTASI ---
+# Kita buat variabel state untuk menyimpan derajat rotasi
+if 'rotation' not in st.session_state:
+    st.session_state.rotation = 0
+
+def rotate_camera():
+    st.session_state.rotation = (st.session_state.rotation + 90) % 360
+
+# Masukkan CSS dinamis berdasarkan derajat rotasi
+st.markdown(f"""
     <style>
-    /* Mengatur agar area kamera memenuhi lebar layar HP */
-    div[data-testid="stCameraInput"] > label {
-        display: none;
-    }
-    video {
+    /* Mencari elemen video dan memutarnya */
+    video {{
+        transform: rotate({st.session_state.rotation}deg);
+        transition: transform 0.3s ease-in-out;
         border-radius: 15px;
-        border: 2px solid #007bff;
-        transform: rotate(0deg); /* Anda bisa mengubah ke 90deg jika kamera terbalik */
-    }
+        border: 3px solid #007bff;
+        width: 100% !important;
+        height: auto !important;
+    }}
+    .stCameraInput {{
+        overflow: hidden;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🛡️ Scanner Absensi")
-tab1, tab2 = st.tabs(["📲 Scan Sekarang", "🖨️ Cetak QR"])
+
+# --- TOMBOL KONTROL ---
+col1, col2 = st.columns(2)
+with col1:
+    st.button("🔄 Putar Layar Kamera", on_click=rotate_camera)
+with col2:
+    if st.button("❌ Reset"):
+        st.session_state.rotation = 0
+        st.rerun()
+
+st.info(f"Posisi Rotasi: {st.session_state.rotation}°")
+
+# Lanjutkan ke bagian input kamera seperti sebelumnya
+password_input = st.text_input("Masukkan Password (150882):", type="password")
+foto_qr = st.camera_input("Ambil Gambar QR")
+
+# ... (Sisa kode dekripsi Anda di bawah sama seperti sebelumnya)
 
 # --- TAB 1: SCANNER (UNTUK HP GURU) ---
 with tab1:
