@@ -98,8 +98,6 @@ st.info(f"Posisi Rotasi: {st.session_state.rotation}°")
 password_input = st.text_input("Masukkan Password (150882):", type="password")
 foto_qr = st.camera_input("Ambil Gambar QR")
 
-    if foto_qr and password_input:
-        try:
             # Decode gambar
             file_bytes = np.asarray(bytearray(foto_qr.read()), dtype=np.uint8)
             img = cv2.imdecode(file_bytes, 1)
