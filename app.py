@@ -19,7 +19,7 @@ def get_cipher(password):
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-# --- DATA LINK SISWA (LENGKAP) ---
+# --- DATA LINK SISWA ---
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
     "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
@@ -49,84 +49,85 @@ DATA_SISWA = {
     "ZAINAl ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- PENGATURAN HALAMAN ---
-st.set_page_config(page_title="Absensi QR Terenkripsi", layout="centered")
-
-# Inisialisasi State Rotasi
+# --- PENGATURAN STATE ---
 if 'rotasi' not in st.session_state:
     st.session_state.rotasi = 0
 
-def putar_layar():
-    st.session_state.rotasi = (st.session_state.rotasi + 90) % 360
+# --- UI DAN CSS ---
+st.set_page_config(page_title="Scanner QR Sekolah", layout="wide")
 
-# --- CSS UNTUK TAMPILAN ---
 st.markdown(f"""
     <style>
+    /* Membuat video kamera lebar dan merespons rotasi */
     video {{
-        transform: rotate({st.session_state.rotasi}deg);
-        border: 4px solid #007bff;
-        border-radius: 15px;
         width: 100% !important;
+        max-width: 600px;
+        height: auto !important;
+        border: 5px solid #007bff;
+        border-radius: 20px;
+        transform: rotate({st.session_state.rotasi}deg);
+        transition: transform 0.3s ease;
+        margin-bottom: 20px;
     }}
-    .stButton>button {{ width: 100%; font-weight: bold; border-radius: 10px; }}
+    /* Menghilangkan label default kamera */
+    div[data-testid="stCameraInput"] > label {{
+        display: none;
+    }}
+    .stButton>button {{ width: 100%; height: 50px; border-radius: 12px; font-weight: bold; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ Scanner Absensi Sekolah")
+st.title("🛡️ Scanner Absensi")
 
-tab1, tab2 = st.tabs(["📲 Scanner (Guru)", "🖨️ Download QR (Admin)"])
+tab1, tab2 = st.tabs(["📲 Scanner", "🖨️ Cetak QR"])
 
-# --- TAB 1: SCANNER ---
 with tab1:
-    st.info("Arahkan kamera ke QR Code. Jika miring, klik tombol 'Putar Layar'.")
-    
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.button("🔄 Putar Layar Kamera", on_click=putar_layar)
-    with col_b:
-        if st.button("❌ Reset"):
+    # Kontrol Kamera
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Putar Tampilan"):
+            st.session_state.rotasi = (st.session_state.rotasi + 90) % 360
+            st.rerun()
+    with col2:
+        if st.button("♻️ Reset Kamera"):
             st.session_state.rotasi = 0
             st.rerun()
-
-    pwd = st.text_input("Password Scan:", value="150882", type="password")
-    input_foto = st.camera_input("Ambil Foto QR")
-
-    if input_foto and pwd:
-        try:
-            # Baca Gambar
-            file_bytes = np.asarray(bytearray(input_foto.read()), dtype=np.uint8)
-            img = cv2.imdecode(file_bytes, 1)
             
-            # Deteksi QR
+    st.write("Jika kamera salah (depan/belakang), gunakan pengaturan browser Anda.")
+    
+    pwd = st.text_input("Password (150882):", value="150882", type="password")
+    
+    # Komponen Kamera Utama
+    foto = st.camera_input("Ambil Foto QR")
+
+    if foto and pwd:
+        try:
+            file_bytes = np.asarray(bytearray(foto.read()), dtype=np.uint8)
+            img = cv2.imdecode(file_bytes, 1)
             det = cv2.QRCodeDetector()
             val, _, _ = det.detectAndDecode(img)
             
             if val:
                 cipher = get_cipher(pwd)
-                link_asli = cipher.decrypt(val.encode()).decode()
+                link = cipher.decrypt(val.encode()).decode()
                 st.balloons()
-                st.success("✅ Terverifikasi!")
-                st.link_button("👉 KLIK UNTUK ISI ABSEN", link_asli)
+                st.success("✅ Berhasil!")
+                st.link_button("👉 BUKA FORM GOOGLE", link)
             else:
-                st.error("Gagal mendeteksi QR Code. Coba putar layar atau pastikan cahaya cukup.")
+                st.error("Gagal mendeteksi QR. Coba putar atau perbaiki pencahayaan.")
         except:
-            st.error("❌ Password Salah atau Data Rusak!")
+            st.error("❌ Password salah atau data QR tidak valid!")
 
-# --- TAB 2: GENERATOR ---
 with tab2:
-    st.header("Cetak QR Code Siswa")
-    st.warning("Gunakan kertas putih dan cetak dengan jelas.")
-    
-    if st.button("Tampilkan Daftar QR"):
+    st.header("Generator QR")
+    if st.button("Tampilkan QR Siswa"):
         cipher = get_cipher("150882")
         cols = st.columns(2)
         for i, (nama, url) in enumerate(DATA_SISWA.items()):
-            # Enkripsi & Buat QR
             enc = cipher.encrypt(url.encode())
-            img_qr = qrcode.make(enc)
+            qr_img = qrcode.make(enc)
             buf = BytesIO()
-            img_qr.save(buf, format="PNG")
-            
+            qr_img.save(buf, format="PNG")
             with cols[i % 2]:
                 st.image(buf.getvalue(), caption=nama, use_container_width=True)
-                st.download_button(f"Simpan QR {nama}", buf.getvalue(), f"{nama}.png", "image/png")
+                st.download_button(f"Unduh {nama}", buf.getvalue(), f"{nama}.png")
