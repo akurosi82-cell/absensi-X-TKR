@@ -9,66 +9,88 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
-# --- 1. CONFIG & DATA ---
+# --- 1. CONFIG & PASSWORD ---
 SANDI_UTAMA = "150882"
+
+# Data Siswa Lengkap
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
-    # ... (tambahkan data siswa lainnya di sini)
+    "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
+    "AHMAD FAIZIN RAMADANI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+FAIZIN+RAMADANI&entry.1794922110=H",
+    "AHMAD FAUZAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+FAUZAN&entry.1794922110=H",
+    "AHMAD RAMA DANI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AHMAD+RAMA+DANI&entry.1794922110=H",
+    "AKBAR ARIYAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AKBAR+ARIYAN&entry.1794922110=H",
+    "AKBAR DWI SAPUTRA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=AKBAR+DWI+SAPUTRA&entry.1794922110=H",
+    "ALFAREZZAL RADHITYA TOROSI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ALFAREZZAL+RADHITYA+TOROSI&entry.1794922110=H",
+    "ARMAN SYAIFUL BAHRI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ARMAN+SYAIFUL+BAHRI&entry.1794922110=H",
+    "BENY KURNIAWAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=BENY+KURNIAWAN&entry.1794922110=H",
+    "DAVID KURNIAWAN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=DAVID+KURNIAWAN&entry.1794922110=H",
+    "FAHRUL ROZI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=FAHRUL+ROZI&entry.1794922110=H",
+    "FAIDUL BADRI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=FAIDUL+BADRI&entry.1794922110=H",
+    "FIRMAN AFANDI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=FIRMAN+AFANDI&entry.1794922110=H",
+    "ILAN CAHYA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ILAN+CAHYA&entry.1794922110=H",
+    "JUDIANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=JUDIANTO&entry.1794922110=H",
+    "MOH. RAEHAN FIRMANSYAH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MOH.+RAEHAN+FIRMANSYAH&entry.1794922110=H",
+    "MUHAMMAD FADIL MARSUKI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+FADIL+MARSUKI&entry.1794922110=H",
+    "MUHAMMAD GHUFRON": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+GHUFRON&entry.1794922110=H",
+    "MUHAMMAD MALIK WARIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+MALIK+WARIYANTO&entry.1794922110=H",
+    "MUHAMMAD ROMLI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+ROMLI&entry.1794922110=H",
+    "NARJIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=NARJIYANTO&entry.1794922110=H",
+    "RIFKA PERADITIYA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKA+PERADITIYA&entry.1794922110=H",
+    "RIFKI KHAIRUL UMAM": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKI+KHAIRUL+UMAM&entry.1794922110=H",
+    "RIFKI YANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKI+YANTO&entry.1794922110=H",
+    "ZAINAL ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- 2. FUNGSI KEAMANAN ---
+# --- 2. SECURITY ENGINE ---
 @st.cache_resource
 def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'garam_xtkr_v4',
+        salt=b'xtkr_sandi_secure_88',
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
 # --- 3. UI STYLE & UKURAN KAMERA ---
-st.set_page_config(page_title="Scanner Besar X TKR", layout="centered")
+st.set_page_config(page_title="Absensi X TKR", page_icon="📸", layout="centered")
 
 st.markdown("""
     <style>
-    /* Mengatur ukuran kotak kamera agar lebih besar */
+    /* Kotak Kamera Besar */
     div[data-testid="stCameraInput"] {
         width: 100% !important;
-        max-width: 600px !important; /* Sesuaikan lebar maksimal */
+        max-width: 700px !important;
         margin: auto;
-        border: 4px solid #1E88E5;
-        border-radius: 20px;
-        padding: 5px;
+        border: 6px solid #28a745;
+        border-radius: 25px;
     }
-    
-    /* Mengatur preview video di dalam kotak agar lebih tinggi */
+    /* Tinggi Video */
     div[data-testid="stCameraInput"] video {
-        border-radius: 15px;
-        min-height: 400px; /* Menambah tinggi tampilan kamera */
-        object-fit: cover; /* Agar video memenuhi kotak */
+        min-height: 450px;
+        object-fit: cover;
     }
-
-    /* Memperbesar tombol di dalam kamera */
-    button[data-testid="stBaseButton-secondary"] {
-        height: 50px !important;
-        font-size: 18px !important;
-    }
+    .stButton>button { width: 100%; height: 60px; font-size: 20px; border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📸 Presensi QR X TKR")
+st.title("🛡️ Presensi Digital X TKR")
 
-tab_scan, tab_admin = st.tabs(["📌 SCAN SEKARANG", "🛠️ ADMIN"])
+tab_scan, tab_admin = st.tabs(["📸 SCAN QR", "⚙️ ADMIN"])
 
 # --- 4. TAB SCANNER ---
 with tab_scan:
-    st.write("### Gunakan Kamera Belakang")
-    st.info("Posisikan QR Code tepat di tengah layar kamera di bawah.")
+    st.markdown("### Langkah Absensi:")
+    st.write("1. Gunakan kamera belakang (klik ikon 🔄 jika perlu).")
+    st.write("2. Arahkan ke QR Code dan klik tombol **Ambil Foto**.")
     
-    # Widget Kamera (Sekarang Tampil Lebih Besar karena CSS di atas)
-    img_file = st.camera_input("Scanner Aktif")
+    # Password otomatis terisi 150882
+    pwd_input = st.text_input("Sandi Sistem:", type="password", value=SANDI_UTAMA)
+    
+    # Widget Kamera Besar
+    img_file = st.camera_input("Kamera Siap Scan")
 
     if img_file:
         file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
@@ -78,30 +100,34 @@ with tab_scan:
         
         if data:
             try:
-                cipher = get_cipher(SANDI_UTAMA)
+                cipher = get_cipher(pwd_input)
                 link = cipher.decrypt(data.encode()).decode()
-                st.success("✅ Terdeteksi!")
-                st.link_button("🔥 KLIK UNTUK KIRIM ABSEN", link, type="primary", use_container_width=True)
+                st.success("✅ IDENTITAS TERVERIFIKASI!")
                 st.balloons()
+                st.link_button("🚀 KLIK UNTUK KIRIM KE GOOGLE FORM", link, type="primary")
             except:
-                st.error("QR Code tidak cocok.")
+                st.error("❌ Password salah atau QR Code tidak dikenal.")
         else:
-            st.warning("⚠️ QR tidak terbaca. Coba dekati objek atau bersihkan lensa.")
+            st.warning("⚠️ QR tidak terbaca. Pastikan fokus dan tidak silau.")
 
 # --- 5. TAB ADMIN ---
 with tab_admin:
-    st.subheader("Menu Admin")
-    pwd = st.text_input("Sandi Admin:", type="password", value=SANDI_UTAMA)
+    st.subheader("Pusat Kendali Admin")
+    admin_pwd = st.text_input("Sandi Admin:", type="password", value=SANDI_UTAMA, key="admin_key")
     
-    if st.button("Download Semua QR (ZIP)"):
-        if pwd == SANDI_UTAMA:
-            zip_buf = BytesIO()
-            with zipfile.ZipFile(zip_buf, "a", zipfile.ZIP_DEFLATED) as zf:
-                for nama, url in DATA_SISWA.items():
-                    encrypted = get_cipher(SANDI_UTAMA).encrypt(url.encode()).decode()
-                    qr_img = qrcode.make(encrypted)
+    if st.button("📦 DOWNLOAD SEMUA QR (ZIP)"):
+        if admin_pwd == SANDI_UTAMA:
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zf:
+                cols = st.columns(2)
+                for idx, (nama, url) in enumerate(DATA_SISWA.items()):
+                    # Enkripsi data dengan password 150882
+                    token = get_cipher(SANDI_UTAMA).encrypt(url.encode()).decode()
+                    qr_img = qrcode.make(token)
                     img_io = BytesIO()
                     qr_img.save(img_io, format="PNG")
                     zf.writestr(f"QR_{nama}.png", img_io.getvalue())
+                    with cols[idx % 2]:
+                        st.image(img_io.getvalue(), caption=nama, width=150)
             
-            st.download_button("📥 DOWNLOAD ZIP", zip_buf.getvalue(), "QR_XTKR.zip", "application/zip")
+            st.download_button("
