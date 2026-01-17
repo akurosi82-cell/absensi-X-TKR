@@ -1,6 +1,6 @@
 streamlit
-qrcode
-cryptography
+streamlit-webrtc
 opencv-python-headless
-numpy
-Pillow
+cryptography
+qrcode
+pillow
