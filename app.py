@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
 import cv2
 import numpy as np
 import qrcode
@@ -10,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
-# --- 1. DATA MASTER SISWA ---
+# --- 1. DATA MASTER SISWA (Tetap Sama) ---
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
     "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
@@ -54,51 +53,56 @@ def get_cipher(password):
 
 # --- 3. UI CONFIG ---
 st.set_page_config(page_title="Absensi QR Pro", layout="centered")
-st.title("📸 Sistem Absensi QR Sekolah")
 
-tab_scan, tab_admin = st.tabs(["📌 Scanner Siswa", "🛠️ Generator Admin"])
+# CSS untuk mempercantik tampilan mobile
+st.markdown("""
+    <style>
+    div[data-testid="stCameraInput"] { border: 3px solid #00CC00; border-radius: 15px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- 4. TAB SCANNER ---
+st.title("📸 Absensi QR Sekolah")
+
+tab_scan, tab_admin = st.tabs(["📌 Scanner", "🛠️ Admin"])
+
+# --- 4. TAB SCANNER (VERSI STABIL) ---
 with tab_scan:
     pwd_scan = st.text_input("Sandi Scanner:", type="password", value="150882", key="sc_pwd")
-    st.info("Klik 'Start' dan arahkan kamera ke QR Code. Pilih kamera belakang pada 'Select Device' jika perlu.")
+    
+    # Menggunakan camera_input yang jauh lebih stabil di Python 3.13
+    img_file = st.camera_input("Ambil Foto QR Code")
 
-    ctx = webrtc_streamer(
-        key="scanner-pro",
-        mode=WebRtcMode.SENDRECV,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": {"facingMode": "environment"}, "audio": False},
-        async_processing=True,
-    )
-
-    if ctx.video_receiver:
-        detector = cv2.QRCodeDetector()
-        img_frame = ctx.video_receiver.get_frame()
+    if img_file:
+        # Konversi ke format OpenCV
+        bytes_data = img_file.getvalue()
+        cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
         
-        if img_frame:
-            img = img_frame.to_ndarray(format="bgr24")
-            val, _, _ = detector.detectAndDecode(img)
-            
-            if val:
-                try:
-                    cipher = get_cipher(pwd_scan)
-                    link_asli = cipher.decrypt(val.encode()).decode()
-                    st.success("✅ QR Code Valid!")
-                    st.link_button("👉 TEKAN UNTUK ABSEN SEKARANG", link_asli, type="primary", use_container_width=True)
-                    st.balloons()
-                except:
-                    st.error("Sandi salah atau QR tidak dikenal!")
+        # Deteksi QR
+        detector = cv2.QRCodeDetector()
+        val, _, _ = detector.detectAndDecode(cv2_img)
+        
+        if val:
+            try:
+                cipher = get_cipher(pwd_scan)
+                link_asli = cipher.decrypt(val.encode()).decode()
+                st.success("✅ Terverifikasi!")
+                st.balloons()
+                st.link_button("👉 TEKAN UNTUK ABSEN SEKARANG", link_asli, type="primary", use_container_width=True)
+            except:
+                st.error("❌ Sandi salah atau QR tidak dikenal!")
+        else:
+            st.warning("⚠️ QR Code tidak terlihat jelas. Coba lagi dengan pencahayaan yang cukup.")
 
-# --- 5. TAB ADMIN ---
+# --- 5. TAB ADMIN (ZIP Generator) ---
 with tab_admin:
     st.subheader("Cetak & Kelola QR Code")
     pwd_gen = st.text_input("Konfirmasi Sandi Admin:", type="password", value="150882", key="ad_pwd")
     
-    if st.button("🚀 Generate & Siapkan ZIP Semua Siswa"):
+    if st.button("🚀 Generate Semua QR & Buat ZIP"):
         cipher_admin = get_cipher(pwd_gen)
         zip_buffer = BytesIO()
         
-        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
             cols = st.columns(2)
             for idx, (nama, link) in enumerate(DATA_SISWA.items()):
                 token = cipher_admin.encrypt(link.encode()).decode()
@@ -111,7 +115,7 @@ with tab_admin:
                 with cols[idx % 2]:
                     st.image(img_buffer.getvalue(), caption=nama, width=150)
         
-        st.success(f"Berhasil membuat {len(DATA_SISWA)} QR Code!")
+        st.success(f"Berhasil membuat {len(DATA_SISWA)} QR!")
         st.download_button(
             label="📥 DOWNLOAD SEMUA QR (ZIP)",
             data=zip_buffer.getvalue(),
@@ -119,6 +123,3 @@ with tab_admin:
             mime="application/zip",
             use_container_width=True
         )
-
-st.divider()
-st.caption("Aplikasi Absensi Mandiri - Versi Keamanan Tinggi")
