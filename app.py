@@ -56,7 +56,15 @@ st.set_page_config(page_title="Scanner QR Terenkripsi", page_icon="🔒")
 # Styling CSS untuk tampilan mobile yang lebih baik
 st.markdown("""
     <style>
-    .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #007bff; color: white; }
+    /* Mengatur agar area kamera memenuhi lebar layar HP */
+    div[data-testid="stCameraInput"] > label {
+        display: none;
+    }
+    video {
+        border-radius: 15px;
+        border: 2px solid #007bff;
+        transform: rotate(0deg); /* Anda bisa mengubah ke 90deg jika kamera terbalik */
+    }
     </style>
     """, unsafe_allow_html=True)
 
