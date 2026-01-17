@@ -49,70 +49,61 @@ DATA_SISWA = {
     "ZAINAl ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- SETUP HALAMAN ---
-st.set_page_config(page_title="QR Scanner Redmi", layout="wide")
+st.set_page_config(page_title="Scanner QR Sekolah", layout="centered")
 
 if 'rot' not in st.session_state:
     st.session_state.rot = 0
 
-# --- CSS CUSTOM UNTUK REDMI NOTE 9 ---
+# --- CSS OPTIMASI REDMI & KAMERA ---
 st.markdown(f"""
     <style>
-    /* Paksa video kamera menjadi lebar penuh */
     video {{
         width: 100% !important;
-        height: auto !important;
+        border: 4px solid #28a745;
         border-radius: 12px;
-        border: 4px solid #00c853;
         transform: rotate({st.session_state.rot}deg);
     }}
-    /* Perbesar tombol 'Ganti Kamera' dan 'Ambil Foto' */
-    [data-testid="stCameraInputButton"] {{
-        width: 100% !important;
-        height: 60px !important;
-        font-size: 20px !important;
-    }}
-    .stButton>button {{
-        height: 50px;
-        background-color: #f0f2f6;
-    }}
+    .stButton>button {{ width: 100%; border-radius: 8px; font-weight: bold; }}
+    /* Menonaktifkan label standar agar lebih rapi */
+    div[data-testid="stCameraInput"] > label {{ display: none; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📸 Scanner Absensi")
+st.title("🛡️ Auto-Scanner Absensi")
 
-# Kontrol Rotasi
-c1, c2 = st.columns(2)
-with c1:
+# Kontrol Layar
+col1, col2 = st.columns(2)
+with col1:
     if st.button("🔄 Putar Tampilan"):
         st.session_state.rot = (st.session_state.rot + 90) % 360
         st.rerun()
-with c2:
+with col2:
     if st.button("♻️ Reset"):
         st.session_state.rot = 0
         st.rerun()
 
-st.info("💡 Klik tombol kamera di bawah. Jika kamera depan yang muncul, cari ikon ganti kamera di pojok layar.")
+# INSTRUKSI KAMERA UNTUK REDMI
+st.info("💡 **Tips Kamera Belakang:** Jika kamera selfie yang terbuka, klik tombol **'Ganti Kamera'** (ikon panah melingkar) yang muncul di pojok area kamera.")
 
-pwd = st.text_input("Sandi (150882):", value="150882", type="password")
+pwd = st.text_input("Sandi Scan (150882):", value="150882", type="password")
 
-# FITUR UTAMA: Kamera Input
-# Pada Redmi Note 9, pastikan membuka via Chrome asli
-foto = st.camera_input("Scan QR Di Sini")
+# Pemicu Scanner
+foto = st.camera_input("Arahkan QR Code ke Kamera")
 
-if foto and pwd:
-    try:
-        file_bytes = np.asarray(bytearray(foto.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, 1)
-        det = cv2.QRCodeDetector()
-        val, _, _ = det.detectAndDecode(img)
-        
-        if val:
+if foto:
+    file_bytes = np.asarray(bytearray(foto.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_bytes, 1)
+    det = cv2.QRCodeDetector()
+    val, _, _ = det.detectAndDecode(img)
+    
+    if val:
+        try:
             cipher = get_cipher(pwd)
             link = cipher.decrypt(val.encode()).decode()
-            st.success("✅ Berhasil Didekripsi!")
-            st.link_button("🔥 BUKA GOOGLE FORM", link)
-        else:
-            st.error("Gagal membaca QR. Pastikan cahaya terang dan posisi pas.")
-    except:
-        st.error("Password Salah!")
+            st.success("✅ Terdeteksi! Silakan buka form di bawah:")
+            st.link_button("🔥 BUKA FORM GOOGLE", link, type="primary")
+            st.balloons()
+        except:
+            st.error("Sandi salah atau data rusak!")
+    else:
+        st.warning("QR belum terbaca. Pastikan QR Code berada di tengah kotak hijau.")
