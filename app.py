@@ -12,7 +12,6 @@ from cryptography.fernet import Fernet
 # --- 1. CONFIG & PASSWORD ---
 SANDI_UTAMA = "150882"
 
-# Data Siswa Lengkap
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
     "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
@@ -48,18 +47,17 @@ def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'xtkr_sandi_secure_88',
+        salt=b'garam_xtkr_secure_88',
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-# --- 3. UI STYLE & UKURAN KAMERA ---
+# --- 3. UI STYLE & KAMERA BESAR ---
 st.set_page_config(page_title="Absensi X TKR", page_icon="📸", layout="centered")
 
 st.markdown("""
     <style>
-    /* Kotak Kamera Besar */
     div[data-testid="stCameraInput"] {
         width: 100% !important;
         max-width: 700px !important;
@@ -67,7 +65,6 @@ st.markdown("""
         border: 6px solid #28a745;
         border-radius: 25px;
     }
-    /* Tinggi Video */
     div[data-testid="stCameraInput"] video {
         min-height: 450px;
         object-fit: cover;
@@ -82,15 +79,10 @@ tab_scan, tab_admin = st.tabs(["📸 SCAN QR", "⚙️ ADMIN"])
 
 # --- 4. TAB SCANNER ---
 with tab_scan:
-    st.markdown("### Langkah Absensi:")
-    st.write("1. Gunakan kamera belakang (klik ikon 🔄 jika perlu).")
-    st.write("2. Arahkan ke QR Code dan klik tombol **Ambil Foto**.")
-    
-    # Password otomatis terisi 150882
+    st.info("Gunakan kamera belakang (klik ikon 🔄 jika perlu). Posisikan QR di tengah kotak.")
     pwd_input = st.text_input("Sandi Sistem:", type="password", value=SANDI_UTAMA)
     
-    # Widget Kamera Besar
-    img_file = st.camera_input("Kamera Siap Scan")
+    img_file = st.camera_input("Scanner Aktif")
 
     if img_file:
         file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
@@ -104,9 +96,9 @@ with tab_scan:
                 link = cipher.decrypt(data.encode()).decode()
                 st.success("✅ IDENTITAS TERVERIFIKASI!")
                 st.balloons()
-                st.link_button("🚀 KLIK UNTUK KIRIM KE GOOGLE FORM", link, type="primary")
+                st.link_button("🚀 KIRIM ABSEN SEKARANG", link, type="primary")
             except:
-                st.error("❌ Password salah atau QR Code tidak dikenal.")
+                st.error("❌ Sandi salah atau QR Code tidak dikenal.")
         else:
             st.warning("⚠️ QR tidak terbaca. Pastikan fokus dan tidak silau.")
 
@@ -121,7 +113,6 @@ with tab_admin:
             with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zf:
                 cols = st.columns(2)
                 for idx, (nama, url) in enumerate(DATA_SISWA.items()):
-                    # Enkripsi data dengan password 150882
                     token = get_cipher(SANDI_UTAMA).encrypt(url.encode()).decode()
                     qr_img = qrcode.make(token)
                     img_io = BytesIO()
@@ -130,4 +121,16 @@ with tab_admin:
                     with cols[idx % 2]:
                         st.image(img_io.getvalue(), caption=nama, width=150)
             
-            st.download_button("
+            st.success("ZIP Berhasil dibuat!")
+            st.download_button(
+                label="📥 DOWNLOAD FILE ZIP SEKARANG",
+                data=zip_buffer.getvalue(),
+                file_name="QR_SISWA_XTKR.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
+        else:
+            st.error("Sandi Admin salah!")
+
+st.divider()
+st.caption("Aplikasi Presensi X TKR - Sandi 150882")
