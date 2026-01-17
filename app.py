@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
-# --- 1. KONFIGURASI ---
+# --- 1. CONFIG & DATA MASTER ---
 SANDI_UTAMA = "150882"
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
@@ -40,74 +40,101 @@ DATA_SISWA = {
     "ZAINAL ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- 2. ENKRIPSI ---
+# --- 2. FUNGSI KEAMANAN ---
 @st.cache_resource
 def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'xtkr_sandi_secure_88',
+        salt=b'garam_sekolah_xtkr_88', # Salt unik
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-# --- 3. UI SETUP ---
-st.set_page_config(page_title="Absensi X TKR", layout="centered")
+# --- 3. UI STYLE ---
+st.set_page_config(page_title="Absensi QR X TKR", page_icon="📸", layout="centered")
 
-# CSS & JS untuk memperjelas fitur pindah kamera
-st.markdown("""
+st.markdown(f"""
     <style>
-    div[data-testid="stCameraInput"] { border: 3px solid #28a745; border-radius: 15px; }
-    .camera-help { font-size: 0.9em; color: #666; margin-bottom: 10px; }
+    div[data-testid="stCameraInput"] {{ border: 5px solid #1E88E5; border-radius: 20px; }}
+    .stTabs [data-baseweb="tab"] {{ font-weight: bold; font-size: 18px; }}
+    .main {{ background-color: #f8f9fa; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📸 Scanner Presensi")
+st.title("📸 QR Scanner X TKR")
 
-tab_scan, tab_admin = st.tabs(["📌 SCAN QR", "⚙️ ADMIN"])
+tab_scan, tab_admin = st.tabs(["📌 SCAN ABSEN", "🛠️ MENU ADMIN"])
 
 # --- 4. TAB SCANNER ---
 with tab_scan:
-    st.markdown('<p class="camera-help"><b>Tips:</b> Gunakan kamera belakang agar fokus lebih tajam. Jika kamera depan yang aktif, klik ikon 🔄 (rotasi) pada layar kamera di bawah.</p>', unsafe_allow_html=True)
+    st.info("💡 Pastikan pencahayaan terang. Jika kamera depan yang aktif, gunakan ikon 🔄 di layar kamera untuk pindah ke kamera belakang.")
     
-    # Kamera Input
-    img_file = st.camera_input("Ambil Foto QR Code")
+    # Sandi otomatis terisi
+    user_pwd = st.text_input("Sandi Verifikasi:", type="password", value=SANDI_UTAMA)
+    
+    # Widget Kamera
+    img_file = st.camera_input("Scanner Aktif")
 
     if img_file:
+        # Proses Konversi Gambar
         file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, 1)
-        detector = cv2.QRCodeDetector()
-        data, _, _ = detector.detectAndDecode(img)
+        opencv_img = cv2.imdecode(file_bytes, 1)
         
-        if data:
+        # Deteksi QR
+        detector = cv2.QRCodeDetector()
+        decoded_text, _, _ = detector.detectAndDecode(opencv_img)
+        
+        if decoded_text:
             try:
-                cipher = get_cipher(SANDI_UTAMA)
-                link = cipher.decrypt(data.encode()).decode()
-                st.success("✅ Terdeteksi! Silakan klik tombol di bawah:")
-                st.link_button("🚀 KIRIM ABSENSI SEKARANG", link, type="primary", use_container_width=True)
+                cipher = get_cipher(user_pwd)
+                final_link = cipher.decrypt(decoded_text.encode()).decode()
+                st.success("✅ QR Code Valid! Identitas terkonfirmasi.")
                 st.balloons()
+                st.link_button("👉 KLIK DISINI UNTUK KIRIM ABSEN", final_link, type="primary", use_container_width=True)
             except:
-                st.error("QR Code salah atau tidak dikenal.")
+                st.error("❌ Sandi salah atau QR Code tidak dikenali oleh sistem.")
         else:
-            st.warning("⚠️ QR tidak terbaca. Pastikan gambar jelas dan tidak blur.")
+            st.warning("⚠️ QR Code tidak terdeteksi. Pastikan gambar tidak blur dan jarak tidak terlalu jauh.")
 
 # --- 5. TAB ADMIN ---
 with tab_admin:
-    st.subheader("Pengaturan Admin")
-    pwd = st.text_input("Sandi Konfirmasi:", type="password", value=SANDI_UTAMA)
+    st.subheader("Manajemen Data QR Siswa")
+    admin_pwd = st.text_input("Konfirmasi Sandi Admin:", type="password", value=SANDI_UTAMA, key="admin_key")
     
-    if st.button("Generate ZIP Semua QR"):
-        if pwd == SANDI_UTAMA:
-            zip_buf = BytesIO()
-            with zipfile.ZipFile(zip_buf, "a", zipfile.ZIP_DEFLATED) as zf:
-                for nama, url in DATA_SISWA.items():
-                    encrypted = get_cipher(SANDI_UTAMA).encrypt(url.encode()).decode()
-                    qr_img = qrcode.make(encrypted)
+    if st.button("🚀 Generate & Download Semua QR (ZIP)", use_container_width=True):
+        if admin_pwd == SANDI_UTAMA:
+            cipher_admin = get_cipher(admin_pwd)
+            zip_buffer = BytesIO()
+            
+            with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                cols = st.columns(2)
+                for idx, (nama, link) in enumerate(DATA_SISWA.items()):
+                    # Enkripsi Link
+                    token = cipher_admin.encrypt(link.encode()).decode()
+                    # Buat QR Image
+                    qr_img = qrcode.make(token)
                     img_io = BytesIO()
                     qr_img.save(img_io, format="PNG")
-                    zf.writestr(f"QR_{nama}.png", img_io.getvalue())
+                    
+                    # Simpan ke ZIP
+                    zip_file.writestr(f"QR_{nama}.png", img_io.getvalue())
+                    
+                    # Tampilkan Preview di Layar
+                    with cols[idx % 2]:
+                        st.image(img_io.getvalue(), caption=nama, width=150)
             
-            st.download_button("📥 Download ZIP", zip_buf.getvalue(), "QR_Siswa_XTKR.zip", "application/zip", use_container_width=True)
+            st.success(f"Berhasil membuat {len(DATA_SISWA)} QR Code!")
+            st.download_button(
+                label="📥 UNDUH FILE ZIP",
+                data=zip_buffer.getvalue(),
+                file_name="QR_Siswa_XTKR_Lengkap.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
         else:
-            st.error("Sandi salah.")
+            st.error("Sandi Admin tidak sesuai.")
+
+st.divider()
+st.caption("Aplikasi Presensi X TKR - Dikembangkan dengan Python & Streamlit")
