@@ -9,7 +9,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
-# --- 1. DATA MASTER SISWA ---
+# --- 1. KONFIGURASI & DATA ---
+SANDI_UTAMA = "150882"
 DATA_SISWA = {
     "ABU KHOROIROH": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ABU+KHOROIROH&entry.1794922110=H",
     "ADYTIA PRATAMA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ADYTIA+PRATAMA&entry.1794922110=H",
@@ -31,7 +32,7 @@ DATA_SISWA = {
     "MUHAMMAD FADIL MARSUKI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+FADIL+MARSUKI&entry.1794922110=H",
     "MUHAMMAD GHUFRON": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+GHUFRON&entry.1794922110=H",
     "MUHAMMAD MALIK WARIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+MALIK+WARIYANTO&entry.1794922110=H",
-    "MUHAMMAD ROMLI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGq (rest of links...)",
+    "MUHAMMAD ROMLI": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=MUHAMMAD+ROMLI&entry.1794922110=H",
     "NARJIYANTO": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=NARJIYANTO&entry.1794922110=H",
     "RIFKA PERADITIYA": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKA+PERADITIYA&entry.1794922110=H",
     "RIFKI KHAIRUL UMAM": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=RIFKI+KHAIRUL+UMAM&entry.1794922110=H",
@@ -39,91 +40,90 @@ DATA_SISWA = {
     "ZAINAL ARIFIN": "https://docs.google.com/forms/d/e/1FAIpQLSdUe2J9tSsCngKuJEqJLNACrnb2oGqQ5yKCR5N7i1iSyZWpcA/viewform?usp=pp_url&entry.1937004703=ZAINAl+ARIFIN&entry.1794922110=H"
 }
 
-# --- 2. FUNGSI KEAMANAN DENGAN SANDI TETAP ---
-SANDI_UTAMA = "150882"
-
+# --- 2. FUNGSI KEAMANAN ---
 @st.cache_resource
 def get_cipher(password):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b'garam_xtkr_2024', # Salt unik untuk keamanan tambahan
+        salt=b'garam_xtkr_v3',
         iterations=100000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-# --- 3. UI CONFIG ---
-st.set_page_config(page_title="Absensi X TKR", layout="centered")
+# --- 3. UI STYLE ---
+st.set_page_config(page_title="Scanner Otomatis X TKR", layout="centered")
 
-st.markdown("""
+# CSS untuk membuat tampilan fokus pada kamera
+st.markdown(f"""
     <style>
-    div[data-testid="stCameraInput"] { border: 4px solid #1E88E5; border-radius: 15px; }
-    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
-    .stTabs [data-baseweb="tab"] { height: 50px; border-radius: 10px; background-color: #f0f2f6; }
+    div[data-testid="stCameraInput"] {{ border: 5px solid #28a745; border-radius: 20px; }}
+    .stButton>button {{ background-color: #28a745; color: white; font-weight: bold; border-radius: 10px; }}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ QR Absensi X TKR")
+st.title("⚡ Scanner Presensi X TKR")
 
-tab_scan, tab_admin = st.tabs(["📸 SCANNER SISWA", "🛠️ MENU ADMIN"])
+tab_scan, tab_admin = st.tabs(["📸 SCAN QR", "⚙️ ADMIN"])
 
-# --- 4. TAB SCANNER ---
+# --- 4. SCANNER (PROSES INSTAN) ---
 with tab_scan:
-    st.write("Silakan ambil foto QR Code Anda untuk melakukan presensi.")
-    # Input sandi otomatis terisi dengan sandi yang Anda minta
-    user_pwd = st.text_input("Sandi Verifikasi:", type="password", value=SANDI_UTAMA)
+    st.info("Sandi Otomatis: " + SANDI_UTAMA)
+    # Gunakan kunci statis agar siswa tidak perlu mengetik
+    cipher = get_cipher(SANDI_UTAMA)
     
-    img_file = st.camera_input("Scanner Aktif")
+    # Widget kamera
+    img_file = st.camera_input("Arahkan QR ke Kotak di Bawah")
 
     if img_file:
-        bytes_data = img_file.getvalue()
-        cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-        detector = cv2.QRCodeDetector()
-        val, _, _ = detector.detectAndDecode(cv2_img)
+        # Mengolah gambar secara instan setelah tombol ditekan
+        file_bytes = np.asarray(bytearray(img_file.read()), dtype=np.uint8)
+        opencv_img = cv2.imdecode(file_bytes, 1)
         
-        if val:
+        # Deteksi QR
+        detector = cv2.QRCodeDetector()
+        decoded_text, points, _ = detector.detectAndDecode(opencv_img)
+        
+        if decoded_text:
             try:
-                cipher = get_cipher(user_pwd)
-                link_asli = cipher.decrypt(val.encode()).decode()
-                st.success("✅ Identitas Dikenali!")
+                # Dekripsi link
+                final_link = cipher.decrypt(decoded_text.encode()).decode()
+                st.success("✅ BERHASIL TERDETEKSI!")
                 st.balloons()
-                st.link_button("🚀 KIRIM ABSEN SEKARANG", link_asli, type="primary", use_container_width=True)
+                # Langsung tampilkan tombol absen besar
+                st.link_button("🔥 KLIK DI SINI UNTUK KIRIM ABSEN", final_link, use_container_width=True, type="primary")
             except:
-                st.error("❌ Sandi salah atau QR tidak valid untuk sistem ini.")
+                st.error("❌ QR Code tidak cocok dengan sistem ini.")
         else:
-            st.warning("⚠️ QR Code tidak terbaca. Pastikan posisi stiker tegak dan tidak terkena pantulan cahaya.")
+            st.error("⚠️ QR Tidak Terdeteksi. Pastikan cahaya terang dan gambar fokus.")
 
-# --- 5. TAB ADMIN ---
+# --- 5. ADMIN (ZIP GENERATOR) ---
 with tab_admin:
-    st.subheader("Pusat Kontrol QR")
-    admin_pwd = st.text_input("Konfirmasi Sandi Admin:", type="password", value=SANDI_UTAMA, key="admin_pwd_key")
+    st.subheader("Cetak QR Baru")
+    admin_pwd = st.text_input("Sandi Admin:", type="password", value=SANDI_UTAMA)
     
-    if st.button("📦 Generate & Buat ZIP Semua QR"):
+    if st.button("📦 Download Semua QR (ZIP)"):
         if admin_pwd == SANDI_UTAMA:
-            cipher_admin = get_cipher(admin_pwd)
             zip_buffer = BytesIO()
-            
             with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zip_file:
-                cols = st.columns(2)
-                for idx, (nama, link) in enumerate(DATA_SISWA.items()):
-                    token = cipher_admin.encrypt(link.encode()).decode()
+                for nama, link in DATA_SISWA.items():
+                    # Buat QR Terenkripsi
+                    token = get_cipher(SANDI_UTAMA).encrypt(link.encode()).decode()
                     qr_img = qrcode.make(token)
                     img_io = BytesIO()
                     qr_img.save(img_io, format="PNG")
-                    
                     zip_file.writestr(f"QR_{nama}.png", img_io.getvalue())
-                    
-                    with cols[idx % 2]:
-                        st.image(img_io.getvalue(), caption=nama, width=150)
             
-            st.success("✅ Berhasil mengemas semua QR ke file ZIP.")
             st.download_button(
-                label="📥 UNDUH FILE ZIP (SEMUA SISWA)",
+                label="📥 UNDUH SEKARANG",
                 data=zip_buffer.getvalue(),
-                file_name="QR_SISWA_XTKR_FINAL.zip",
+                file_name="QR_Siswa_XTKR.zip",
                 mime="application/zip",
                 use_container_width=True
             )
         else:
-            st.error("Sandi Admin salah!")
+            st.error("Sandi Admin Salah!")
+
+st.divider()
+st.caption("Gunakan Kamera Belakang untuk hasil terbaik.")
