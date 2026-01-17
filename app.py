@@ -1,13 +1,13 @@
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 import cv2
 import numpy as np
 import base64
-from io import BytesIO
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
-# --- FUNGSI KEAMANAN (Sama seperti sebelumnya) ---
+# --- FUNGSI KEAMANAN ---
 @st.cache_resource
 def get_cipher(password):
     kdf = PBKDF2HMAC(
@@ -19,67 +19,47 @@ def get_cipher(password):
     key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
 
-st.set_page_config(page_title="Scanner QR Belakang", layout="centered")
+# --- LOGIKA SCANNER ---
+class QRScanner(VideoTransformerBase):
+    def __init__(self):
+        self.detector = cv2.QRCodeDetector()
+        self.last_val = None
 
-# --- JAVASCRIPT UNTUK MEMAKSA KAMERA BELAKANG ---
-# Script ini mencoba mencari elemen video dan mengatur facingMode ke environment
-st.components.v1.html(
-    """
-    <script>
-    const interval = setInterval(() => {
-        const videos = window.parent.document.querySelectorAll("video");
-        if (videos.length > 0) {
-            videos.forEach(video => {
-                if (video.srcObject) {
-                    const tracks = video.srcObject.getVideoTracks();
-                    tracks.forEach(track => {
-                        if (track.getConstraints().facingMode !== 'environment') {
-                            track.applyConstraints({
-                                facingMode: { exact: 'environment' }
-                            }).catch(e => {
-                                // Jika 'exact' gagal (misal di PC), coba mode environment biasa
-                                track.applyConstraints({ facingMode: 'environment' });
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    }, 1000);
-    </script>
-    """,
-    height=0,
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        val, _, _ = self.detector.detectAndDecode(img)
+        
+        if val:
+            self.last_val = val
+        return img
+
+st.title("🛡️ Scanner Absensi Pro")
+pwd = st.text_input("Sandi Sistem:", value="150882", type="password")
+
+st.info("Klik 'START' lalu pilih kamera belakang pada menu 'Select Device' di bawah layar video.")
+
+# --- KOMPONEN KAMERA ---
+ctx = webrtc_streamer(
+    key="qr-scanner",
+    mode=WebRtcMode.SENDRECV,
+    video_transformer_factory=QRScanner,
+    # Memaksa preferensi kamera belakang pada HP
+    media_stream_constraints={"video": {"facingMode": "environment"}, "audio": False},
+    async_processing=True,
 )
 
-st.title("📸 Scanner Kamera Belakang")
-
-# --- UI INSTRUKSI ---
-st.warning("Jika kamera depan masih aktif, klik tombol 'Ganti Kamera' yang muncul di layar jendela kamera Anda.")
-
-pwd = st.text_input("Sandi (150882):", value="150882", type="password")
-
-# Widget Kamera
-foto = st.camera_input("Scan QR Code Siswa")
-
-if foto:
-    file_bytes = np.asarray(bytearray(foto.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, 1)
-    det = cv2.QRCodeDetector()
-    val, _, _ = det.detectAndDecode(img)
-    
-    if val:
+# --- PROSES HASIL SCAN ---
+if ctx.video_transformer:
+    hasil_qr = ctx.video_transformer.last_val
+    if hasil_qr:
         try:
             cipher = get_cipher(pwd)
-            link = cipher.decrypt(val.encode()).decode()
-            st.success("✅ Berhasil Scan!")
-            st.link_button("👉 BUKA FORM ABSEN", link, type="primary")
-            st.balloons()
+            link_asli = cipher.decrypt(hasil_qr.encode()).decode()
+            
+            st.success("✅ QR Terdeteksi!")
+            st.link_button("🚀 KLIK UNTUK ABSEN", link_asli, type="primary", use_container_width=True)
+            
+            # Reset hasil agar tidak looping terus menerus
+            ctx.video_transformer.last_val = None
         except:
-            st.error("Gagal dekripsi. Sandi mungkin salah.")
-    else:
-        st.info("Dekatkan QR Code ke kamera agar fokus.")
-
-# --- BAGIAN ADMIN ---
-with st.expander("🛠️ Admin: Cetak QR"):
-    st.write("Gunakan bagian ini untuk membuat QR Code terenkripsi.")
-    # (Kode generator tetap sama seperti sebelumnya)
+            st.error("Gagal dekripsi. Pastikan sandi benar.")
